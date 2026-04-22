@@ -1,0 +1,35 @@
+arena: downloads
+root: ~/Downloads
+
+zones:
+  - name: staging
+    path: .
+  - name: documents
+    path: ~/Documents
+  - name: projects
+    path: ~/Projects
+  - name: trash
+    path: ~/.Trash
+
+rules:
+  structural:
+    - description: "PDFs older than 7 days"
+      extensions: [".pdf"]
+      age_days: 7
+      suggest: documents
+      confidence: 0.80
+
+    - description: "Disk images older than 1 day"
+      extensions: [".dmg", ".iso"]
+      age_days: 1
+      suggest: trash
+      confidence: 0.85
+
+    - description: "Archives older than 3 days"
+      extensions: [".zip", ".tar.gz", ".tgz"]
+      age_days: 3
+      suggest: trash
+      confidence: 0.70
+
+  semantic:
+    enabled: false

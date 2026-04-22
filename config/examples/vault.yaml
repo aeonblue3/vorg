@@ -1,0 +1,55 @@
+arena: vault
+root: ~/Documents/Obsidian/Main
+
+zones:
+  - name: inbox
+    path: Inbox
+  - name: active
+    path: Active
+  - name: reference
+    path: Reference
+  - name: archive
+    path: Archive
+
+rules:
+  structural:
+    - description: "Review folder idle >45 days"
+      zone: active
+      path_pattern: "Reviews/"
+      age_days: 45
+      suggest: archive
+      confidence: 0.85
+
+    - description: "Any file in Unsorted/"
+      path_pattern: "Unsorted/"
+      suggest: inbox
+      confidence: 0.90
+
+    - description: "Non-markdown outside Resources/"
+      extensions: [".pdf", ".png", ".jpg", ".zip"]
+      exclude_path: "Resources/"
+      suggest: reference
+      confidence: 0.70
+
+  metadata:
+    - field: status
+      value: complete
+      suggest: archive
+      confidence: 0.90
+
+    - field: status
+      value: active
+      suggest: active
+      confidence: 0.95
+
+    - field: type
+      value: reference
+      suggest: reference
+      confidence: 0.90
+
+  semantic:
+    enabled: true
+    model: "qwen2.5:3b"
+    ollama_url: "http://localhost:11434"
+    threshold: 0.75
+    max_tokens: 500
