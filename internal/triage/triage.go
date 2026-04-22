@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/chrisdias/vorg/internal/classifier"
+	"github.com/chrisdias/vorg/internal/config"
 	"golang.org/x/term"
 )
 
@@ -19,10 +20,24 @@ type Decision struct {
 }
 
 // Run presents candidates one-by-one and collects decisions.
+// skipList is loaded before the session and persisted on every "s" keypress.
 // Returns decisions only for candidates marked "archive" or "move".
-func Run(candidates []classifier.Candidate, dryRun bool) ([]Decision, error) {
+func Run(candidates []classifier.Candidate, skipList *config.SkipList, dryRun bool) ([]Decision, error) {
 	if len(candidates) == 0 {
 		fmt.Println("No candidates found.")
+		return nil, nil
+	}
+
+	// Filter candidates already on the persistent skip list.
+	var active []classifier.Candidate
+	for _, c := range candidates {
+		if skipList != nil && skipList.Contains(c.File.RelPath) {
+			continue
+		}
+		active = append(active, c)
+	}
+	if len(active) == 0 {
+		fmt.Println("All candidates are on the skip list — nothing to triage.")
 		return nil, nil
 	}
 
@@ -30,29 +45,15 @@ func Run(candidates []classifier.Candidate, dryRun bool) ([]Decision, error) {
 	fd := int(os.Stdin.Fd())
 	oldState, err := term.MakeRaw(fd)
 	if err != nil {
-		// Fallback to line-mode if raw mode fails (e.g. piped input).
-		return runLineMode(candidates, dryRun)
+		return runLineMode(active, skipList, dryRun)
 	}
 	defer term.Restore(fd, oldState)
 
 	var decisions []Decision
-	var skipList []string
 
-	for i, c := range candidates {
-		// Check skip list.
-		skipped := false
-		for _, s := range skipList {
-			if s == c.File.RelPath {
-				skipped = true
-				break
-			}
-		}
-		if skipped {
-			continue
-		}
-
+	for i, c := range active {
 		term.Restore(fd, oldState)
-		printCandidate(i+1, len(candidates), c)
+		printCandidate(i+1, len(active), c)
 
 		rawAgain, _ := term.MakeRaw(fd)
 
@@ -71,8 +72,11 @@ func Run(candidates []classifier.Candidate, dryRun bool) ([]Decision, error) {
 			term.Restore(fd, oldState)
 			goto summary
 		case "skip":
-			skipList = append(skipList, c.File.RelPath)
-			continue
+			if skipList != nil {
+				if err := skipList.Add(c.File.RelPath); err != nil {
+					fmt.Printf("\n  ! could not save skip list: %v\n", err)
+				}
+			}
 		case "keep":
 			// no decision recorded
 		case "archive", "move":
@@ -139,12 +143,12 @@ func readDecision(c classifier.Candidate, rawMode bool) (action, dest string, er
 		case "s":
 			fmt.Println("s")
 			return "skip", dest, nil
-		case "q", "\x03": // q or Ctrl-C
+		case "q", "\x03":
 			fmt.Println("q")
 			return "quit", dest, nil
 		case "e":
 			fmt.Println("e")
-			newDest, err := editDestination(dest, rawMode)
+			newDest, err := editDestination(dest)
 			if err != nil {
 				return "quit", dest, err
 			}
@@ -156,23 +160,12 @@ func readDecision(c classifier.Candidate, rawMode bool) (action, dest string, er
 			printHelp()
 			fmt.Printf("> ")
 		default:
-			// ignore unknown keys in raw mode, re-prompt
 			fmt.Printf("\r> ")
 		}
 	}
 }
 
-func editDestination(current string, rawMode bool) (string, error) {
-	// Temporarily restore cooked mode for text entry.
-	if rawMode {
-		fd := int(os.Stdin.Fd())
-		state, err := term.GetState(fd)
-		if err == nil {
-			defer term.Restore(fd, state)
-		}
-		// We can't restore to cooked from raw without the old state.
-		// Just read a full line in raw mode character by character.
-	}
+func editDestination(current string) (string, error) {
 	fmt.Printf("\n  Edit destination (Enter to confirm):\n  [%s]\n  New: ", current)
 	reader := bufio.NewReader(os.Stdin)
 	line, err := reader.ReadString('\n')
@@ -197,7 +190,6 @@ func printHelp() {
 }
 
 func confirmAndReturn(decisions []Decision, dryRun bool) ([]Decision, error) {
-	skipped := 0
 	kept := 0
 	var toCommit []Decision
 	for _, d := range decisions {
@@ -206,13 +198,11 @@ func confirmAndReturn(decisions []Decision, dryRun bool) ([]Decision, error) {
 			toCommit = append(toCommit, d)
 		case "keep":
 			kept++
-		case "skip":
-			skipped++
 		}
 	}
 
-	fmt.Printf("\n%d candidates reviewed. Queue: %d to move, %d kept, %d skipped.\n",
-		len(decisions), len(toCommit), kept, skipped)
+	fmt.Printf("\n%d candidates reviewed. Queue: %d to move, %d kept.\n",
+		len(decisions)+kept, len(toCommit), kept)
 
 	if len(toCommit) == 0 {
 		fmt.Println("Nothing to commit.")
@@ -239,8 +229,7 @@ func confirmAndReturn(decisions []Decision, dryRun bool) ([]Decision, error) {
 	return toCommit, nil
 }
 
-// runLineMode is the fallback when raw terminal mode is unavailable.
-func runLineMode(candidates []classifier.Candidate, dryRun bool) ([]Decision, error) {
+func runLineMode(candidates []classifier.Candidate, skipList *config.SkipList, dryRun bool) ([]Decision, error) {
 	var decisions []Decision
 	reader := bufio.NewReader(os.Stdin)
 
@@ -257,6 +246,10 @@ func runLineMode(candidates []classifier.Candidate, dryRun bool) ([]Decision, er
 		switch string(key[0]) {
 		case "a":
 			decisions = append(decisions, Decision{Candidate: c, Action: "archive", Destination: c.SuggestedPath})
+		case "s":
+			if skipList != nil {
+				_ = skipList.Add(c.File.RelPath)
+			}
 		case "k":
 			// keep — no decision
 		case "q":

@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -145,8 +146,22 @@ func parseYAMLFM(block string) map[string]string {
 	}
 	result := make(map[string]string, len(raw))
 	for k, v := range raw {
-		if s, ok := v.(string); ok {
-			result[k] = s
+		switch val := v.(type) {
+		case string:
+			result[k] = val
+		case []interface{}:
+			// Flatten string slices (e.g. tags) as comma-separated.
+			parts := make([]string, 0, len(val))
+			for _, item := range val {
+				if s, ok := item.(string); ok {
+					parts = append(parts, s)
+				}
+			}
+			result[k] = strings.Join(parts, ",")
+		default:
+			if v != nil {
+				result[k] = fmt.Sprintf("%v", v)
+			}
 		}
 	}
 	return result

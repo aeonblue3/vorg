@@ -122,7 +122,11 @@ func triageCmd() *cobra.Command {
 				}
 			}
 
-			decisions, err := triage.Run(candidates, flagDryRun)
+			skipList, err := config.LoadSkipList(flagConfigDir)
+			if err != nil && flagVerbose {
+				fmt.Printf("Warning: could not load skip list: %v\n", err)
+			}
+			decisions, err := triage.Run(candidates, skipList, flagDryRun)
 			if err != nil {
 				return err
 			}
