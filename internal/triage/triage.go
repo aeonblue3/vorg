@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/chrisdias/vorg/internal/classifier"
-	"github.com/chrisdias/vorg/internal/config"
+	"github.com/aeonblue3/vorg/internal/classifier"
+	"github.com/aeonblue3/vorg/internal/config"
 	"golang.org/x/term"
 )
 

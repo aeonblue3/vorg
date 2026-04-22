@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chrisdias/vorg/internal/arena"
+	"github.com/aeonblue3/vorg/internal/arena"
 )
 
 func TestParseMD_FrontmatterString(t *testing.T) {

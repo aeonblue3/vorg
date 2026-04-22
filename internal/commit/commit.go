@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chrisdias/vorg/internal/triage"
+	"github.com/aeonblue3/vorg/internal/triage"
 )
 
 // LinkMap maps a filename (without extension) to all vault .md files that reference it.

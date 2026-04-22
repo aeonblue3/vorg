@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chrisdias/vorg/internal/arena"
-	"github.com/chrisdias/vorg/internal/scanner"
+	"github.com/aeonblue3/vorg/internal/arena"
+	"github.com/aeonblue3/vorg/internal/scanner"
 )
 
 func makeEntry(relPath, zone string, ageDays int, fm map[string]string) scanner.FileEntry {

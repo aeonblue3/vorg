@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/chrisdias/vorg/internal/arena"
-	"github.com/chrisdias/vorg/internal/classifier"
-	"github.com/chrisdias/vorg/internal/commit"
-	"github.com/chrisdias/vorg/internal/config"
-	"github.com/chrisdias/vorg/internal/scanner"
-	"github.com/chrisdias/vorg/internal/triage"
+	"github.com/aeonblue3/vorg/internal/arena"
+	"github.com/aeonblue3/vorg/internal/classifier"
+	"github.com/aeonblue3/vorg/internal/commit"
+	"github.com/aeonblue3/vorg/internal/config"
+	"github.com/aeonblue3/vorg/internal/scanner"
+	"github.com/aeonblue3/vorg/internal/triage"
 	"github.com/spf13/cobra"
 )
 

@@ -3,8 +3,8 @@ package classifier
 import (
 	"path/filepath"
 
-	"github.com/chrisdias/vorg/internal/arena"
-	"github.com/chrisdias/vorg/internal/scanner"
+	"github.com/aeonblue3/vorg/internal/arena"
+	"github.com/aeonblue3/vorg/internal/scanner"
 )
 
 func metadata(fe scanner.FileEntry, cfg *arena.ArenaConfig) *Candidate {

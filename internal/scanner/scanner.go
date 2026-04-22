@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chrisdias/vorg/internal/arena"
+	"github.com/aeonblue3/vorg/internal/arena"
 	"gopkg.in/yaml.v3"
 )
 

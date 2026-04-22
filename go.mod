@@ -1,4 +1,4 @@
-module github.com/chrisdias/vorg
+module github.com/aeonblue3/vorg
 
 go 1.22
 

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chrisdias/vorg/internal/arena"
-	"github.com/chrisdias/vorg/internal/scanner"
+	"github.com/aeonblue3/vorg/internal/arena"
+	"github.com/aeonblue3/vorg/internal/scanner"
 )
 
 const defaultOllamaURL = "http://localhost:11434"
