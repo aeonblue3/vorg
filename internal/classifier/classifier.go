@@ -18,7 +18,8 @@ type Candidate struct {
 
 // Classify runs the three-signal pipeline against a set of FileEntry records
 // and returns all candidates that exceeded their confidence thresholds.
-// Phase 1: structural and metadata only (semantic skipped).
+// Signal order: structural → metadata → semantic (Ollama). Each level is only
+// reached when the cheaper signals produce no confident match.
 func Classify(entries []scanner.FileEntry, cfg *arena.ArenaConfig, minConfidence float64) []Candidate {
 	var candidates []Candidate
 
@@ -33,7 +34,11 @@ func Classify(entries []scanner.FileEntry, cfg *arena.ArenaConfig, minConfidence
 				continue
 			}
 		}
-		// Phase 3: semantic — not implemented yet
+		if cfg.Rules.Semantic.Enabled {
+			if c := semantic(fe, cfg); c != nil && c.Confidence >= minConfidence {
+				candidates = append(candidates, *c)
+			}
+		}
 	}
 
 	return candidates
