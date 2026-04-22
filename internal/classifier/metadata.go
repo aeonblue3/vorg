@@ -17,7 +17,7 @@ func metadata(fe scanner.FileEntry, cfg *arena.ArenaConfig) *Candidate {
 		suggestedPath := ""
 		for _, z := range cfg.Zones {
 			if z.Name == rule.Suggest {
-				suggestedPath = filepath.Join(cfg.Root, z.Path, filepath.Base(fe.Path))
+				suggestedPath = zonePath(cfg.Root, z.Path, filepath.Base(fe.Path))
 				break
 			}
 		}

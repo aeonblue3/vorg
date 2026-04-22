@@ -2,10 +2,11 @@ package arena
 
 // ArenaConfig is the top-level configuration for a single file system arena.
 type ArenaConfig struct {
-	Name  string       `yaml:"arena"`
-	Root  string       `yaml:"root"`
-	Zones []ZoneConfig `yaml:"zones"`
-	Rules RulesConfig  `yaml:"rules"`
+	Name     string       `yaml:"arena"`
+	Root     string       `yaml:"root"`
+	Obsidian bool         `yaml:"obsidian"` // enables wikilink rewriting on commit
+	Zones    []ZoneConfig `yaml:"zones"`
+	Rules    RulesConfig  `yaml:"rules"`
 }
 
 type ZoneConfig struct {

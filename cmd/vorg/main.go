@@ -110,15 +110,17 @@ func triageCmd() *cobra.Command {
 				return nil
 			}
 
-			// Populate inbound links before starting the interactive session.
-			linkMap, err := commit.BuildLinkMap(cfg.Root)
-			if err != nil && flagVerbose {
-				fmt.Printf("Warning: could not build link map: %v\n", err)
-			}
-			for i, c := range candidates {
-				base := basenameNoExt(c.File.Path)
-				if refs, ok := linkMap[base]; ok {
-					candidates[i].InboundLinks = refs
+			// Populate inbound links — only for Obsidian arenas.
+			if cfg.Obsidian {
+				linkMap, err := commit.BuildLinkMap(cfg.Root)
+				if err != nil && flagVerbose {
+					fmt.Printf("Warning: could not build link map: %v\n", err)
+				}
+				for i, c := range candidates {
+					base := basenameNoExt(c.File.Path)
+					if refs, ok := linkMap[base]; ok {
+						candidates[i].InboundLinks = refs
+					}
 				}
 			}
 
@@ -134,7 +136,12 @@ func triageCmd() *cobra.Command {
 				return nil
 			}
 
-			return commit.Execute(decisions, cfg.Root, config.DefaultLogPath(), flagVerbose)
+			// Pass vault root only for Obsidian arenas; empty string skips link rewriting.
+			vaultRoot := ""
+			if cfg.Obsidian {
+				vaultRoot = cfg.Root
+			}
+			return commit.Execute(decisions, vaultRoot, config.DefaultLogPath(), flagVerbose)
 		},
 	}
 }
@@ -142,27 +149,77 @@ func triageCmd() *cobra.Command {
 // ── status ───────────────────────────────────────────────────────────────────
 
 func statusCmd() *cobra.Command {
-	return &cobra.Command{
+	var all bool
+	cmd := &cobra.Command{
 		Use:   "status",
 		Short: "summary of how many files appear out of place",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if all {
+				return statusAll()
+			}
 			cfg, err := loadArena()
 			if err != nil {
 				return err
 			}
-
-			entries, err := scanner.Scan(cfg, scanner.DefaultOptions())
-			if err != nil {
-				return err
-			}
-
-			candidates := classifier.Classify(entries, cfg, 0.0)
-			fmt.Printf("Arena: %s\n", cfg.Name)
-			fmt.Printf("Root:  %s\n", cfg.Root)
-			fmt.Printf("Files: %d total, %d candidates\n", len(entries), len(candidates))
-			return nil
+			return printArenaStatus(cfg)
 		},
 	}
+	cmd.Flags().BoolVar(&all, "all", false, "show status for all configured arenas")
+	return cmd
+}
+
+func printArenaStatus(cfg *arena.ArenaConfig) error {
+	entries, err := scanner.Scan(cfg, scanner.DefaultOptions())
+	if err != nil {
+		return fmt.Errorf("scanning %s: %w", cfg.Name, err)
+	}
+	candidates := classifier.Classify(entries, cfg, 0.0)
+	obsidianTag := ""
+	if cfg.Obsidian {
+		obsidianTag = " [obsidian]"
+	}
+	fmt.Printf("%-14s %s%s\n", cfg.Name+obsidianTag, cfg.Root, "")
+	fmt.Printf("  %d files, %d candidates", len(entries), len(candidates))
+	if len(candidates) > 0 {
+		fmt.Printf(" — run 'vorg triage --arena %s' to review", cfg.Name)
+	}
+	fmt.Println()
+	return nil
+}
+
+func statusAll() error {
+	names, err := config.ListArenas(flagConfigDir)
+	if err != nil {
+		return err
+	}
+	if len(names) == 0 {
+		fmt.Printf("No arena configs found in %s\n", flagConfigDir)
+		return nil
+	}
+
+	fmt.Printf("vorg status — %d arenas\n\n", len(names))
+	anyErr := false
+	for _, name := range names {
+		cfg, err := config.LoadArena(flagConfigDir, name)
+		if err != nil {
+			fmt.Printf("  %-14s error: %v\n", name, err)
+			anyErr = true
+			continue
+		}
+		if err := config.Validate(cfg); err != nil {
+			fmt.Printf("  %-14s invalid config: %v\n", name, err)
+			anyErr = true
+			continue
+		}
+		if err := printArenaStatus(cfg); err != nil {
+			fmt.Printf("  %-14s scan error: %v\n", name, err)
+			anyErr = true
+		}
+	}
+	if anyErr {
+		return fmt.Errorf("one or more arenas had errors")
+	}
+	return nil
 }
 
 // ── log ──────────────────────────────────────────────────────────────────────

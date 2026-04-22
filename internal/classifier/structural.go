@@ -70,7 +70,7 @@ func buildCandidate(fe scanner.FileEntry, rule arena.StructuralRule, cfg *arena.
 	suggestedPath := ""
 	for _, z := range cfg.Zones {
 		if z.Name == rule.Suggest {
-			suggestedPath = filepath.Join(cfg.Root, z.Path, filepath.Base(fe.Path))
+			suggestedPath = zonePath(cfg.Root, z.Path, filepath.Base(fe.Path))
 			break
 		}
 	}
@@ -92,6 +92,16 @@ func buildCandidate(fe scanner.FileEntry, rule arena.StructuralRule, cfg *arena.
 		Reason:         reason,
 		ClassifierUsed: "structural",
 	}
+}
+
+// zonePath computes the suggested destination path. When the zone path is
+// already absolute (e.g. ~/.Trash expanded to /Users/x/.Trash), it is used
+// directly. When relative, it is joined under the arena root.
+func zonePath(arenaRoot, zPath, base string) string {
+	if filepath.IsAbs(zPath) {
+		return filepath.Join(zPath, base)
+	}
+	return filepath.Join(arenaRoot, zPath, base)
 }
 
 func itoa(n int) string {

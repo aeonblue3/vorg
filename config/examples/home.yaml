@@ -1,0 +1,31 @@
+arena: home
+root: ~/
+
+zones:
+  - name: desktop
+    path: Desktop
+  - name: documents
+    path: Documents
+  - name: projects
+    path: Projects
+  - name: downloads
+    path: Downloads
+
+rules:
+  structural:
+    - description: "Code projects on Desktop older than 7 days"
+      zone: desktop
+      extensions: [".go", ".py", ".js", ".ts", ".rs", ".rb"]
+      age_days: 7
+      suggest: projects
+      confidence: 0.75
+
+    - description: "PDFs on Desktop older than 3 days"
+      zone: desktop
+      extensions: [".pdf", ".docx", ".xlsx"]
+      age_days: 3
+      suggest: documents
+      confidence: 0.80
+
+  semantic:
+    enabled: false

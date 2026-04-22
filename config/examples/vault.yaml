@@ -1,5 +1,6 @@
 arena: vault
 root: ~/Documents/Obsidian/Main
+obsidian: true
 
 zones:
   - name: inbox
